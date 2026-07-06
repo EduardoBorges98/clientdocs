@@ -19,6 +19,18 @@ public class Document {
     @Column(name = "cpf_cnpj_extracted", length = 20)
     private String cpfCnpjExtracted;
 
+    @Column(name = "bucket_name", length = 100)
+    private String bucketName;
+
+    @Column(name = "s3_key", length = 500)
+    private String s3Key;
+
+    @Column(name = "content_type", length = 100)
+    private String contentType;
+
+    @Column(name = "file_size")
+    private Long fileSize;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
     private DocumentStatus status;
@@ -32,6 +44,7 @@ public class Document {
 
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
+
 
     public Document() {
     }
@@ -125,5 +138,37 @@ public class Document {
 
     public void setProcessedAt(LocalDateTime processedAt) {
         this.processedAt = processedAt;
+    }
+
+    public String getBucketName() {
+        return bucketName;
+    }
+
+    public void setBucketName(String bucketName) {
+        this.bucketName = bucketName;
+    }
+
+    public String getS3Key() {
+        return s3Key;
+    }
+
+    public void setS3Key(String s3Key) {
+        this.s3Key = s3Key;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    public Long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(Long fileSize) {
+        this.fileSize = fileSize;
     }
 }

@@ -14,6 +14,10 @@ public class DocumentResponse {
     private Long clientId;
     private LocalDateTime createdAt;
     private LocalDateTime processedAt;
+    private String bucketName;
+    private String s3Key;
+    private String contentType;
+    private Long fileSize;
 
     public DocumentResponse(Document document) {
         this.id = document.getId();
@@ -23,6 +27,10 @@ public class DocumentResponse {
         this.clientId = document.getClient() != null ? document.getClient().getId() : null;
         this.createdAt = document.getCreatedAt();
         this.processedAt = document.getProcessedAt();
+        this.bucketName = document.getBucketName();
+        this.s3Key = document.getS3Key();
+        this.contentType = document.getContentType();
+        this.fileSize = document.getFileSize();
     }
 
     public Long getId() {
@@ -51,5 +59,21 @@ public class DocumentResponse {
 
     public LocalDateTime getProcessedAt() {
         return processedAt;
+    }
+
+    public String getBucketName() {
+        return bucketName;
+    }
+
+    public String getS3Key() {
+        return s3Key;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public Long getFileSize() {
+        return fileSize;
     }
 }
