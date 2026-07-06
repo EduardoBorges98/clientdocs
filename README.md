@@ -276,7 +276,16 @@ Do not edit a migration after it has already been applied.
 Create a new V3, V4, etc. for future changes.
 ```
 
+
 ---
+
+## API Documentation
+
+Swagger UI is available at:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
 
 ## Next Steps
 
