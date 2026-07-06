@@ -287,6 +287,24 @@ Swagger UI is available at:
 http://localhost:8080/swagger-ui/index.html
 ```
 
+## Application Profiles
+
+The project uses Spring profiles to separate local and production configurations.
+
+Current profiles:
+
+```text
+local -> PostgreSQL running on Docker
+prod  -> external PostgreSQL database using environment variables
+Default active profile -> local
+
+For production, the following environment variables are expected:
+
+DATABASE_URL
+DATABASE_USERNAME
+DATABASE_PASSWORD
+```
+
 ## Next Steps
 
 - Add real PDF upload
