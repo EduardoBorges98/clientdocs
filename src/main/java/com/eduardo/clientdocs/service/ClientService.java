@@ -5,6 +5,8 @@ import com.eduardo.clientdocs.dto.CreateClientRequest;
 import com.eduardo.clientdocs.entity.Client;
 import com.eduardo.clientdocs.repository.ClientRepository;
 import org.springframework.stereotype.Service;
+import com.eduardo.clientdocs.exception.BusinessException;
+import com.eduardo.clientdocs.exception.ResourceNotFoundException;
 
 import java.util.List;
 
@@ -21,7 +23,7 @@ public class ClientService {
         boolean cpfCnpjAlreadyExists = clientRepository.existsByCpfCnpj(request.getCpfCnpj());
 
         if (cpfCnpjAlreadyExists) {
-            throw new RuntimeException("Client already exists with CPF/CNPJ: " + request.getCpfCnpj());
+            throw new BusinessException("Client already exists with CPF/CNPJ: " + request.getCpfCnpj());
         }
 
         Client client = new Client(
@@ -44,8 +46,7 @@ public class ClientService {
 
     public ClientResponse findById(Long id) {
         Client client = clientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Client not found with id: " + id));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Client not found with id: " + id));
         return new ClientResponse(client);
     }
 }

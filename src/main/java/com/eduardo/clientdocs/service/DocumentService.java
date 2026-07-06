@@ -8,6 +8,8 @@ import com.eduardo.clientdocs.enums.DocumentStatus;
 import com.eduardo.clientdocs.repository.ClientRepository;
 import com.eduardo.clientdocs.repository.DocumentRepository;
 import org.springframework.stereotype.Service;
+import com.eduardo.clientdocs.exception.BusinessException;
+import com.eduardo.clientdocs.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +59,7 @@ public class DocumentService {
 
     public DocumentResponse findById(Long id) {
         Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Document not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + id));
 
         return new DocumentResponse(document);
     }
@@ -66,7 +68,7 @@ public class DocumentService {
         String onlyNumbers = fileName.replaceAll("\\D", "");
 
         if (onlyNumbers.isBlank()) {
-            throw new RuntimeException("No CPF/CNPJ found in file name: " + fileName);
+            throw new BusinessException("No CPF/CNPJ found in file name: " + fileName);
         }
 
         return onlyNumbers;
