@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import com.eduardo.clientdocs.exception.BusinessException;
 import com.eduardo.clientdocs.exception.ResourceNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
+import com.eduardo.clientdocs.storage.StorageService;
+import com.eduardo.clientdocs.storage.StoredFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,13 +22,16 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final ClientRepository clientRepository;
+    private final StorageService storageService;
 
     public DocumentService(
             DocumentRepository documentRepository,
-            ClientRepository clientRepository
+            ClientRepository clientRepository,
+            StorageService storageService
     ) {
         this.documentRepository = documentRepository;
         this.clientRepository = clientRepository;
+        this.storageService = storageService;
     }
 
     public DocumentResponse createAndProcess(CreateDocumentRequest request) {
@@ -77,6 +82,7 @@ public class DocumentService {
 
     public DocumentResponse uploadAndProcess(MultipartFile file) {
         validatePdfFile(file);
+        StoredFile storedFile = storageService.store(file);
 
         String fileName = file.getOriginalFilename();
         String cpfCnpj = extractCpfCnpjFromFileName(fileName);
@@ -87,8 +93,10 @@ public class DocumentService {
                 DocumentStatus.PROCESSING
         );
 
-        document.setContentType(file.getContentType());
-        document.setFileSize(file.getSize());
+        document.setBucketName(storedFile.getBucketName());
+        document.setS3Key(storedFile.getStorageKey());
+        document.setContentType(storedFile.getContentType());
+        document.setFileSize(storedFile.getFileSize());
 
         Optional<Client> clientOptional = clientRepository.findByCpfCnpj(cpfCnpj);
 

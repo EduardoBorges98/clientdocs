@@ -21,3 +21,6 @@ application-local.yml
 
 # Docker volumes / temp
 *.tmp
+
+# Local uploaded files
+storage/
