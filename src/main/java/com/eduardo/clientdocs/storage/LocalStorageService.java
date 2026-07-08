@@ -61,4 +61,25 @@ public class LocalStorageService implements StorageService {
                 .replaceAll("[^a-zA-Z0-9._-]", "_")
                 .toLowerCase();
     }
+
+    @Override
+    public DownloadedFile download(String storageKey, String originalFileName, String contentType) {
+        try {
+            Path filePath = Path.of(ROOT_FOLDER, storageKey);
+
+            if (!Files.exists(filePath)) {
+                throw new BusinessException("Stored file not found");
+            }
+
+            byte[] content = Files.readAllBytes(filePath);
+
+            return new DownloadedFile(
+                    content,
+                    originalFileName,
+                    contentType
+            );
+        } catch (IOException exception) {
+            throw new BusinessException("Failed to download stored file");
+        }
+    }
 }

@@ -13,6 +13,7 @@ import com.eduardo.clientdocs.exception.ResourceNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 import com.eduardo.clientdocs.storage.StorageService;
 import com.eduardo.clientdocs.storage.StoredFile;
+import com.eduardo.clientdocs.storage.DownloadedFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -128,5 +129,20 @@ public class DocumentService {
         if (!hasPdfExtension || !hasPdfContentType) {
             throw new BusinessException("Only PDF files are allowed");
         }
+    }
+
+    public DownloadedFile download(Long id) {
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + id));
+
+        if (document.getS3Key() == null || document.getS3Key().isBlank()) {
+            throw new BusinessException("Document file is not available for download");
+        }
+
+        return storageService.download(
+                document.getS3Key(),
+                document.getFileName(),
+                document.getContentType()
+        );
     }
 }
