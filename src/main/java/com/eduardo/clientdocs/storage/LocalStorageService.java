@@ -24,6 +24,7 @@ public class LocalStorageService implements StorageService {
             if (originalFilename == null || originalFilename.isBlank()) {
                 throw new BusinessException("File name is required");
             }
+            String sanitizedFileName = sanitizeFileName(originalFilename);
 
             LocalDate today = LocalDate.now();
 
@@ -34,7 +35,7 @@ public class LocalStorageService implements StorageService {
                     + "/"
                     + UUID.randomUUID()
                     + "-"
-                    + originalFilename;
+                    + sanitizedFileName;
 
             Path destinationPath = Path.of(ROOT_FOLDER, storageKey);
 
@@ -51,5 +52,13 @@ public class LocalStorageService implements StorageService {
         } catch (IOException exception) {
             throw new BusinessException("Failed to store file locally");
         }
+    }
+
+    private String sanitizeFileName(String originalFilename) {
+        String fileName = Path.of(originalFilename).getFileName().toString();
+
+        return fileName
+                .replaceAll("[^a-zA-Z0-9._-]", "_")
+                .toLowerCase();
     }
 }
