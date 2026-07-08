@@ -10,6 +10,7 @@ import com.eduardo.clientdocs.repository.DocumentRepository;
 import org.springframework.stereotype.Service;
 import com.eduardo.clientdocs.exception.BusinessException;
 import com.eduardo.clientdocs.exception.ResourceNotFoundException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -72,5 +73,52 @@ public class DocumentService {
         }
 
         return onlyNumbers;
+    }
+
+    public DocumentResponse uploadAndProcess(MultipartFile file) {
+        validatePdfFile(file);
+
+        String fileName = file.getOriginalFilename();
+        String cpfCnpj = extractCpfCnpjFromFileName(fileName);
+
+        Document document = new Document(
+                fileName,
+                cpfCnpj,
+                DocumentStatus.PROCESSING
+        );
+
+        document.setContentType(file.getContentType());
+        document.setFileSize(file.getSize());
+
+        Optional<Client> clientOptional = clientRepository.findByCpfCnpj(cpfCnpj);
+
+        if (clientOptional.isPresent()) {
+            document.markAsProcessed(clientOptional.get());
+        } else {
+            document.markAsClientNotFound();
+        }
+
+        Document savedDocument = documentRepository.save(document);
+
+        return new DocumentResponse(savedDocument);
+    }
+
+    private void validatePdfFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("File is required");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+
+        if (originalFilename == null || originalFilename.isBlank()) {
+            throw new BusinessException("File name is required");
+        }
+
+        boolean hasPdfExtension = originalFilename.toLowerCase().endsWith(".pdf");
+        boolean hasPdfContentType = "application/pdf".equalsIgnoreCase(file.getContentType());
+
+        if (!hasPdfExtension || !hasPdfContentType) {
+            throw new BusinessException("Only PDF files are allowed");
+        }
     }
 }
