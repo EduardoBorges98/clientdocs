@@ -57,6 +57,21 @@ PostgreSQL running on Docker
 ```
 
 ---
+## Storage
+
+The application uses a `StorageService` abstraction to store uploaded documents.
+
+Currently supported:
+
+- `local`: stores files in the local filesystem under `storage/local`
+- `s3`: planned AWS S3 implementation
+
+The active storage provider is configured by:
+
+```yaml
+app:
+  storage:
+    type: local
 
 ## Future AWS Architecture
 
