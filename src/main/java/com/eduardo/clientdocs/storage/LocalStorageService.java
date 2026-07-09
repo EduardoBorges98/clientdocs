@@ -1,6 +1,8 @@
 package com.eduardo.clientdocs.storage;
 
+import com.eduardo.clientdocs.config.StorageProperties;
 import com.eduardo.clientdocs.exception.BusinessException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -11,10 +13,14 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
+@ConditionalOnProperty(name = "app.storage.type", havingValue = "local")
 public class LocalStorageService implements StorageService {
 
-    private static final String LOCAL_BUCKET_NAME = "local-storage";
-    private static final String ROOT_FOLDER = "storage/local";
+    private final StorageProperties storageProperties;
+
+    public LocalStorageService(StorageProperties storageProperties) {
+        this.storageProperties = storageProperties;
+    }
 
     @Override
     public StoredFile store(MultipartFile file) {
@@ -24,6 +30,7 @@ public class LocalStorageService implements StorageService {
             if (originalFilename == null || originalFilename.isBlank()) {
                 throw new BusinessException("File name is required");
             }
+
             String sanitizedFileName = sanitizeFileName(originalFilename);
 
             LocalDate today = LocalDate.now();
@@ -37,14 +44,17 @@ public class LocalStorageService implements StorageService {
                     + "-"
                     + sanitizedFileName;
 
-            Path destinationPath = Path.of(ROOT_FOLDER, storageKey);
+            Path destinationPath = Path.of(
+                    storageProperties.getLocal().getRootFolder(),
+                    storageKey
+            );
 
             Files.createDirectories(destinationPath.getParent());
 
             file.transferTo(destinationPath);
 
             return new StoredFile(
-                    LOCAL_BUCKET_NAME,
+                    storageProperties.getLocal().getBucketName(),
                     storageKey,
                     file.getContentType(),
                     file.getSize()
@@ -54,18 +64,13 @@ public class LocalStorageService implements StorageService {
         }
     }
 
-    private String sanitizeFileName(String originalFilename) {
-        String fileName = Path.of(originalFilename).getFileName().toString();
-
-        return fileName
-                .replaceAll("[^a-zA-Z0-9._-]", "_")
-                .toLowerCase();
-    }
-
     @Override
     public DownloadedFile download(String storageKey, String originalFileName, String contentType) {
         try {
-            Path filePath = Path.of(ROOT_FOLDER, storageKey);
+            Path filePath = Path.of(
+                    storageProperties.getLocal().getRootFolder(),
+                    storageKey
+            );
 
             if (!Files.exists(filePath)) {
                 throw new BusinessException("Stored file not found");
@@ -81,5 +86,13 @@ public class LocalStorageService implements StorageService {
         } catch (IOException exception) {
             throw new BusinessException("Failed to download stored file");
         }
+    }
+
+    private String sanitizeFileName(String originalFilename) {
+        String fileName = Path.of(originalFilename).getFileName().toString();
+
+        return fileName
+                .replaceAll("[^a-zA-Z0-9._-]", "_")
+                .toLowerCase();
     }
 }
