@@ -99,6 +99,20 @@ CloudWatch logs and metrics
 
 ---
 
+## AWS S3 Storage
+
+The application supports AWS S3 as a storage provider through the `StorageService` abstraction.
+
+When running with the `aws` profile, uploaded PDF files are stored in an S3 bucket, while document metadata is stored in PostgreSQL.
+
+### Required environment variables
+
+```bash
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_REGION=sa-east-1
+AWS_S3_BUCKET_NAME=clientdocs-eduardo-dev
+
 ## Running Locally
 
 ### 1. Start PostgreSQL
