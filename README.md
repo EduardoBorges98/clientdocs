@@ -371,6 +371,15 @@ docker compose build
 docker compose up -d
 ```
 
+## Amazon ECR
+
+The application Docker image is published to Amazon Elastic Container Registry.
+
+Repository:
+
+```text
+clientdocs-api
+```
 ## Next Steps
 
 - Add real PDF upload
