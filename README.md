@@ -362,6 +362,14 @@ DocumentProcessingService processes document
 Update status to PROCESSED or CLIENT_NOT_FOUND
         ↓
 Delete message from SQS
+```
+
+## Running with Docker Compose
+
+```bash
+docker compose build
+docker compose up -d
+```
 
 ## Next Steps
 
