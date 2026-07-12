@@ -12,7 +12,8 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SqsException;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 
 @Component
@@ -23,6 +24,7 @@ public class DocumentQueueConsumer {
     private final AwsProperties awsProperties;
     private final ObjectMapper objectMapper;
     private final DocumentProcessingService documentProcessingService;
+    private static final Logger logger = LoggerFactory.getLogger(DocumentQueueConsumer.class);
 
     public DocumentQueueConsumer(
             SqsClient sqsClient,
@@ -38,6 +40,8 @@ public class DocumentQueueConsumer {
 
     public int processOneMessage() {
         try {
+            logger.debug("Polling SQS document queue for messages");
+
             ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
                     .queueUrl(awsProperties.getSqs().getDocumentQueueUrl())
                     .maxNumberOfMessages(1)
@@ -47,15 +51,20 @@ public class DocumentQueueConsumer {
             List<Message> messages = sqsClient.receiveMessage(receiveMessageRequest).messages();
 
             if (messages.isEmpty()) {
+                logger.debug("No SQS document messages available");
                 return 0;
             }
 
             Message message = messages.get(0);
 
+            logger.info("Received SQS document message. messageId={}", message.messageId());
+
             DocumentProcessingMessage documentMessage = objectMapper.readValue(
                     message.body(),
                     DocumentProcessingMessage.class
             );
+
+            logger.info("Processing SQS document message. documentId={}", documentMessage.getDocumentId());
 
             documentProcessingService.process(documentMessage);
 
@@ -66,10 +75,21 @@ public class DocumentQueueConsumer {
 
             sqsClient.deleteMessage(deleteMessageRequest);
 
+            logger.info("SQS document message processed and deleted. documentId={}, messageId={}",
+                    documentMessage.getDocumentId(),
+                    message.messageId()
+            );
+
             return 1;
         } catch (JsonProcessingException exception) {
+            logger.error("Failed to parse SQS document processing message", exception);
             throw new BusinessException("Failed to parse SQS document processing message");
         } catch (SqsException exception) {
+            logger.error("Failed to consume message from SQS. awsError={}",
+                    exception.awsErrorDetails().errorMessage(),
+                    exception
+            );
+
             throw new BusinessException("Failed to consume message from SQS: " + exception.awsErrorDetails().errorMessage());
         }
     }

@@ -1,6 +1,8 @@
 package com.eduardo.clientdocs.queue;
 
 import com.eduardo.clientdocs.exception.BusinessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -8,6 +10,8 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(name = "app.aws.sqs.document-queue-url")
 public class DocumentQueueScheduler {
+
+    private static final Logger logger = LoggerFactory.getLogger(DocumentQueueScheduler.class);
 
     private final DocumentQueueConsumer documentQueueConsumer;
 
@@ -21,10 +25,10 @@ public class DocumentQueueScheduler {
             int processedMessages = documentQueueConsumer.processOneMessage();
 
             if (processedMessages > 0) {
-                System.out.println("Processed SQS document messages: " + processedMessages);
+                logger.info("Processed {} SQS document message(s)", processedMessages);
             }
         } catch (BusinessException exception) {
-            System.out.println("Failed to process SQS document message: " + exception.getMessage());
+            logger.error("Failed to process SQS document message: {}", exception.getMessage());
         }
     }
 }
