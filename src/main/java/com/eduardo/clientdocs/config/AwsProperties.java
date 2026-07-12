@@ -20,6 +20,7 @@ public class AwsProperties {
     public static class Sqs {
 
         private String documentQueueUrl;
+        private Long pollingIntervalMs = 10000L;
 
         public String getDocumentQueueUrl() {
             return documentQueueUrl;
@@ -28,5 +29,12 @@ public class AwsProperties {
         public void setDocumentQueueUrl(String documentQueueUrl) {
             this.documentQueueUrl = documentQueueUrl;
         }
-    }
-}
+
+        public Long getPollingIntervalMs() {
+            return pollingIntervalMs;
+        }
+
+        public void setPollingIntervalMs(Long pollingIntervalMs) {
+            this.pollingIntervalMs = pollingIntervalMs;
+        }
+    }}

@@ -32,3 +32,4 @@ app:
   aws:
     sqs:
       document-queue-url: ${AWS_SQS_DOCUMENT_QUEUE_URL}
+      polling-interval-ms: 10000
