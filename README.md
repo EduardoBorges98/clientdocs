@@ -334,6 +334,35 @@ DATABASE_USERNAME
 DATABASE_PASSWORD
 ```
 
+## Asynchronous Document Processing with SQS
+
+ClientDocs uses Amazon SQS to process uploaded documents asynchronously.
+
+When a PDF is uploaded, the API stores the file in S3, creates a document record with `PENDING` status, and sends a message to an SQS queue.
+
+A scheduled worker then polls the queue, processes the message, checks whether the extracted CPF/CNPJ belongs to an existing client, and updates the document status.
+
+### Flow
+
+```text
+POST /documents/upload
+        ↓
+Store PDF in Amazon S3
+        ↓
+Create document with PENDING status
+        ↓
+Send message to Amazon SQS
+        ↓
+Scheduled worker polls SQS
+        ↓
+DocumentQueueConsumer reads message
+        ↓
+DocumentProcessingService processes document
+        ↓
+Update status to PROCESSED or CLIENT_NOT_FOUND
+        ↓
+Delete message from SQS
+
 ## Next Steps
 
 - Add real PDF upload
