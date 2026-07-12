@@ -24,3 +24,6 @@ application-local.yml
 
 # Local uploaded files
 storage/
+.env
+application-secret.yaml
+application-local-secret.yaml
