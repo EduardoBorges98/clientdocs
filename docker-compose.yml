@@ -11,5 +11,28 @@ services:
     volumes:
       - clientdocs-data:/var/lib/postgresql/data
 
+  clientdocs-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clientdocs-api
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      DATABASE_URL: jdbc:postgresql://postgres:5432/clientdocs
+      DATABASE_USERNAME: admin
+      DATABASE_PASSWORD: admin
+
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
+      AWS_SQS_DOCUMENT_QUEUE_URL: ${AWS_SQS_DOCUMENT_QUEUE_URL}
+      AWS_SQS_POLLING_INTERVAL_MS: 10000
+
 volumes:
   clientdocs-data:
