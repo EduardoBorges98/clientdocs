@@ -14,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.eduardo.clientdocs.storage.StorageService;
 import com.eduardo.clientdocs.storage.StoredFile;
 import com.eduardo.clientdocs.storage.DownloadedFile;
+import com.eduardo.clientdocs.queue.DocumentProcessingMessage;
+import com.eduardo.clientdocs.queue.DocumentQueueProducer;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,15 +26,18 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final ClientRepository clientRepository;
     private final StorageService storageService;
+    private final DocumentQueueProducer documentQueueProducer;
 
     public DocumentService(
             DocumentRepository documentRepository,
             ClientRepository clientRepository,
-            StorageService storageService
+            StorageService storageService,
+            DocumentQueueProducer documentQueueProducer
     ) {
         this.documentRepository = documentRepository;
         this.clientRepository = clientRepository;
         this.storageService = storageService;
+        this.documentQueueProducer = documentQueueProducer;
     }
 
     public DocumentResponse createAndProcess(CreateDocumentRequest request) {
@@ -83,6 +88,7 @@ public class DocumentService {
 
     public DocumentResponse uploadAndProcess(MultipartFile file) {
         validatePdfFile(file);
+
         StoredFile storedFile = storageService.store(file);
 
         String fileName = file.getOriginalFilename();
@@ -91,7 +97,7 @@ public class DocumentService {
         Document document = new Document(
                 fileName,
                 cpfCnpj,
-                DocumentStatus.PROCESSING
+                DocumentStatus.PENDING
         );
 
         document.setBucketName(storedFile.getBucketName());
@@ -99,15 +105,16 @@ public class DocumentService {
         document.setContentType(storedFile.getContentType());
         document.setFileSize(storedFile.getFileSize());
 
-        Optional<Client> clientOptional = clientRepository.findByCpfCnpj(cpfCnpj);
-
-        if (clientOptional.isPresent()) {
-            document.markAsProcessed(clientOptional.get());
-        } else {
-            document.markAsClientNotFound();
-        }
-
         Document savedDocument = documentRepository.save(document);
+
+        DocumentProcessingMessage message = new DocumentProcessingMessage(
+                savedDocument.getId(),
+                savedDocument.getBucketName(),
+                savedDocument.getS3Key(),
+                savedDocument.getCpfCnpjExtracted()
+        );
+
+        documentQueueProducer.send(message);
 
         return new DocumentResponse(savedDocument);
     }

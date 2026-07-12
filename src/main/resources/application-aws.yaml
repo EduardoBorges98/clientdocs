@@ -28,3 +28,7 @@ app:
     s3:
       bucket-name: ${AWS_S3_BUCKET_NAME}
       region: ${AWS_REGION}
+
+  aws:
+    sqs:
+      document-queue-url: ${AWS_SQS_DOCUMENT_QUEUE_URL}
