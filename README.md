@@ -1,28 +1,28 @@
 # ClientDocs Processor
 
-ClientDocs Processor é uma API backend desenvolvida em Java com Spring Boot para upload, armazenamento e processamento assíncrono de documentos PDF de clientes.
+ClientDocs Processor is a backend API built with Java and Spring Boot for uploading, storing, and asynchronously processing client PDF documents.
 
-O projeto simula um fluxo real de backend cloud, usando banco relacional, armazenamento de arquivos, fila de mensagens, processamento assíncrono, containerização e deploy em AWS ECS Fargate.
-
----
-
-## Objetivo do projeto
-
-O objetivo deste projeto é demonstrar uma arquitetura backend moderna e escalável usando Java e AWS.
-
-A aplicação permite:
-
-- cadastrar clientes;
-- fazer upload de documentos PDF;
-- armazenar arquivos no Amazon S3;
-- salvar metadados no PostgreSQL;
-- enviar eventos para uma fila SQS;
-- processar documentos de forma assíncrona;
-- atualizar o status do documento após o processamento.
+The project simulates a real cloud backend flow: relational database, file storage, message queue, asynchronous processing, containerization, and deployment on AWS ECS Fargate.
 
 ---
 
-## Tecnologias utilizadas
+## Project Goal
+
+The goal of this project is to demonstrate a modern, scalable backend architecture using Java and AWS.
+
+The application allows you to:
+
+- register clients;
+- upload PDF documents;
+- store files in Amazon S3;
+- save metadata in PostgreSQL;
+- send events to an SQS queue;
+- process documents asynchronously;
+- update the document status after processing.
+
+---
+
+## Tech Stack
 
 - Java 21
 - Spring Boot
@@ -33,7 +33,7 @@ A aplicação permite:
 - Flyway
 - Maven
 - Docker
-- Swagger/OpenAPI
+- Swagger / OpenAPI
 - AWS SDK for Java
 - Amazon ECR
 - Amazon ECS Fargate
@@ -45,11 +45,11 @@ A aplicação permite:
 
 ---
 
-## Arquitetura geral
+## General Architecture
 
-A aplicação roda em um container Docker publicado no Amazon ECR e executado no Amazon ECS Fargate.
+The application runs in a Docker container published to Amazon ECR and executed on Amazon ECS Fargate.
 
-O tráfego externo entra pelo Application Load Balancer, que encaminha as requisições para a aplicação Spring Boot rodando no ECS.
+External traffic enters through the Application Load Balancer, which forwards requests to the Spring Boot application running on ECS.
 
 ```text
 Internet / Postman
@@ -64,27 +64,27 @@ S3
     ↓
 SQS
     ↓
-Scheduler interno
+Internal scheduler
     ↓
-RDS atualizado
+RDS updated
 ```
 
 ---
 
-## Fluxo principal
+## Main Flow
 
-1. O usuário envia um PDF para a API.
-2. A aplicação valida o arquivo.
-3. O PDF é salvo no Amazon S3.
-4. Um registro do documento é criado no PostgreSQL com status `PENDING`.
-5. A aplicação envia uma mensagem para uma fila SQS.
-6. Um scheduler interno da aplicação consulta a fila periodicamente.
-7. O consumer processa a mensagem.
-8. A aplicação busca o cliente pelo CPF/CNPJ extraído do nome do arquivo.
-9. O documento é atualizado para `PROCESSED` ou `CLIENT_NOT_FOUND`.
-10. A mensagem é removida da fila SQS.
+1. The user sends a PDF to the API.
+2. The application validates the file.
+3. The PDF is saved to Amazon S3.
+4. A document record is created in PostgreSQL with status `PENDING`.
+5. The application sends a message to an SQS queue.
+6. An internal scheduler polls the queue periodically.
+7. The consumer processes the message.
+8. The application looks up the client by the CPF/CNPJ extracted from the file name.
+9. The document is updated to `PROCESSED` or `CLIENT_NOT_FOUND`.
+10. The message is removed from the SQS queue.
 
-Exemplo de status inicial:
+Initial status example:
 
 ```json
 {
@@ -95,7 +95,7 @@ Exemplo de status inicial:
 }
 ```
 
-Exemplo após o processamento:
+Example after processing:
 
 ```json
 {
@@ -108,13 +108,13 @@ Exemplo após o processamento:
 
 ---
 
-## Principais entidades
+## Main Entities
 
 ### Client
 
-Representa um cliente cadastrado na base.
+Represents a client registered in the database.
 
-Campos principais:
+Main fields:
 
 - `id`
 - `name`
@@ -126,9 +126,9 @@ Campos principais:
 
 ### Document
 
-Representa um documento enviado para processamento.
+Represents a document submitted for processing.
 
-Campos principais:
+Main fields:
 
 - `id`
 - `fileName`
@@ -144,7 +144,7 @@ Campos principais:
 
 ### DocumentStatus
 
-Possíveis status do documento:
+Possible document statuses:
 
 ```text
 PENDING
@@ -156,7 +156,7 @@ ERROR
 
 ---
 
-## Endpoints principais
+## Main Endpoints
 
 ### Health check
 
@@ -164,13 +164,13 @@ ERROR
 GET /health
 ```
 
-Exemplo:
+Example:
 
 ```http
 GET http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/health
 ```
 
-Resposta esperada:
+Expected response:
 
 ```text
 ClientDocs API is running
@@ -178,25 +178,25 @@ ClientDocs API is running
 
 ---
 
-### Criar cliente
+### Create client
 
 ```http
 POST /clients
 ```
 
-Exemplo de body:
+Example body:
 
 ```json
 {
-  "name": "Cliente Teste",
+  "name": "Test Client",
   "cpfCnpj": "12345678000199",
-  "email": "cliente@teste.com"
+  "email": "client@test.com"
 }
 ```
 
 ---
 
-### Listar clientes
+### List clients
 
 ```http
 GET /clients
@@ -204,7 +204,7 @@ GET /clients
 
 ---
 
-### Buscar cliente por ID
+### Find client by ID
 
 ```http
 GET /clients/{id}
@@ -212,31 +212,31 @@ GET /clients/{id}
 
 ---
 
-### Upload de documento
+### Document upload
 
 ```http
 POST /documents/upload
 ```
 
-Tipo de requisição:
+Request type:
 
 ```text
 multipart/form-data
 ```
 
-Campo esperado:
+Expected field:
 
 ```text
 file
 ```
 
-Exemplo usando a URL do Load Balancer:
+Example using the Load Balancer URL:
 
 ```http
 POST http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/documents/upload
 ```
 
-Exemplo de resposta inicial:
+Example initial response:
 
 ```json
 {
@@ -255,19 +255,19 @@ Exemplo de resposta inicial:
 
 ---
 
-### Consultar documento
+### Find document
 
 ```http
 GET /documents/{id}
 ```
 
-Exemplo:
+Example:
 
 ```http
 GET http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/documents/4
 ```
 
-Exemplo de resposta após processamento:
+Example response after processing:
 
 ```json
 {
@@ -286,7 +286,7 @@ Exemplo de resposta após processamento:
 
 ---
 
-### Listar documentos
+### List documents
 
 ```http
 GET /documents
@@ -294,7 +294,7 @@ GET /documents
 
 ---
 
-### Download do documento
+### Download document
 
 ```http
 GET /documents/{id}/download
@@ -302,25 +302,25 @@ GET /documents/{id}/download
 
 ---
 
-### Processar uma mensagem manualmente
+### Manually process one message
 
 ```http
 POST /queue/process-one
 ```
 
-Esse endpoint pode ser usado para testar manualmente o consumo de uma mensagem da fila.
+This endpoint can be used to manually test the consumption of a message from the queue.
 
 ---
 
-## Swagger/OpenAPI
+## Swagger / OpenAPI
 
-Com a aplicação rodando, a documentação Swagger pode ser acessada em:
+While the application is running, Swagger documentation is available at:
 
 ```http
 GET /swagger-ui/index.html
 ```
 
-Exemplo local:
+Local example:
 
 ```http
 http://localhost:8080/swagger-ui/index.html
@@ -328,9 +328,9 @@ http://localhost:8080/swagger-ui/index.html
 
 ---
 
-## Estrutura de pacotes
+## Package Structure
 
-Estrutura conceitual do projeto:
+Conceptual project structure:
 
 ```text
 com.eduardo.clientdocs
@@ -345,27 +345,27 @@ com.eduardo.clientdocs
     └── storage
 ```
 
-Responsabilidades principais:
+Main responsibilities:
 
-- `controller`: endpoints REST;
-- `dto`: objetos de entrada e saída da API;
-- `entity`: entidades JPA;
-- `repository`: interfaces Spring Data JPA;
-- `service`: regras de negócio;
-- `storage`: armazenamento local ou S3;
-- `queue`: integração com SQS;
-- `config`: configurações da aplicação;
-- `exception`: tratamento global de erros.
+- `controller`: REST endpoints;
+- `dto`: API input/output objects;
+- `entity`: JPA entities;
+- `repository`: Spring Data JPA interfaces;
+- `service`: business rules;
+- `storage`: local or S3 storage;
+- `queue`: SQS integration;
+- `config`: application configuration;
+- `exception`: global error handling.
 
 ---
 
-## Profiles da aplicação
+## Application Profiles
 
-A aplicação usa profiles para separar ambientes.
+The application uses profiles to separate environments.
 
 ### local
 
-Usado para desenvolvimento local com PostgreSQL local ou Docker Compose.
+Used for local development with a local PostgreSQL instance or Docker Compose.
 
 ```text
 SPRING_PROFILES_ACTIVE=local
@@ -373,7 +373,7 @@ SPRING_PROFILES_ACTIVE=local
 
 ### aws
 
-Usado para testes locais consumindo serviços reais da AWS, como S3 e SQS.
+Used for local testing while consuming real AWS services, such as S3 and SQS.
 
 ```text
 SPRING_PROFILES_ACTIVE=aws
@@ -381,7 +381,7 @@ SPRING_PROFILES_ACTIVE=aws
 
 ### rds
 
-Usado para testar localmente a aplicação conectando no RDS.
+Used to test the application locally while connecting to RDS.
 
 ```text
 SPRING_PROFILES_ACTIVE=rds
@@ -389,7 +389,7 @@ SPRING_PROFILES_ACTIVE=rds
 
 ### prod
 
-Usado no ECS Fargate.
+Used on ECS Fargate.
 
 ```text
 SPRING_PROFILES_ACTIVE=prod
@@ -397,27 +397,27 @@ SPRING_PROFILES_ACTIVE=prod
 
 ---
 
-## Banco de dados e migrations
+## Database and Migrations
 
-O projeto usa PostgreSQL como banco relacional e Flyway para versionamento do schema.
+The project uses PostgreSQL as its relational database and Flyway for schema versioning.
 
-Migrations principais:
+Main migrations:
 
 ```text
 V1__create_initial_tables.sql
 V2__add_storage_fields_to_documents.sql
 ```
 
-As migrations criam e evoluem as tabelas:
+The migrations create and evolve the tables:
 
 - `clients`
 - `documents`
 
 ---
 
-## Deploy na AWS
+## AWS Deployment
 
-O deploy foi feito usando os seguintes serviços:
+The deployment was done using the following services:
 
 - Amazon ECR
 - Amazon ECS Fargate
@@ -431,7 +431,7 @@ O deploy foi feito usando os seguintes serviços:
 
 ## Amazon ECR
 
-A imagem Docker da aplicação foi publicada no Amazon ECR.
+The application's Docker image was published to Amazon ECR.
 
 Repository:
 
@@ -439,16 +439,16 @@ Repository:
 clientdocs-api
 ```
 
-Image URI utilizada no deploy:
+Image URI used in the deployment:
 
 ```text
-766577288490.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v2
+<account-id>.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v2
 ```
 
-Fluxo usado:
+Flow used:
 
 ```text
-Projeto Spring Boot
+Spring Boot project
     ↓
 Docker build
     ↓
@@ -459,25 +459,25 @@ Docker push
 Amazon ECR
 ```
 
-Comandos utilizados:
+Commands used:
 
 ```bash
 mvn clean package -DskipTests
 
 docker build -t clientdocs-api .
 
-docker tag clientdocs-api:latest 766577288490.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v2
+docker tag clientdocs-api:latest <account-id>.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v2
 
-aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin 766577288490.dkr.ecr.sa-east-1.amazonaws.com
+aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.sa-east-1.amazonaws.com
 
-docker push 766577288490.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v2
+docker push <account-id>.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v2
 ```
 
 ---
 
 ## Amazon ECS Fargate
 
-A aplicação foi executada no ECS Fargate, sem necessidade de criar instância EC2 manualmente.
+The application runs on ECS Fargate, with no need to manually provision an EC2 instance.
 
 Cluster:
 
@@ -497,7 +497,7 @@ Task Definition:
 clientdocs-api-task
 ```
 
-Revision validada:
+Validated revision:
 
 ```text
 clientdocs-api-task:4
@@ -509,13 +509,13 @@ Container port:
 8080
 ```
 
-O ECS Service mantém uma task rodando com a aplicação Spring Boot.
+The ECS Service keeps one task running with the Spring Boot application.
 
 ---
 
 ## Amazon RDS PostgreSQL
 
-O banco de dados da aplicação roda no Amazon RDS PostgreSQL.
+The application's database runs on Amazon RDS PostgreSQL.
 
 DB identifier:
 
@@ -541,20 +541,20 @@ Database name:
 clientdocs
 ```
 
-A aplicação usa o RDS para armazenar:
+The application uses RDS to store:
 
-- clientes;
-- documentos;
-- status de processamento;
-- metadados dos arquivos.
+- clients;
+- documents;
+- processing status;
+- file metadata.
 
-As migrations são executadas com Flyway.
+Migrations are executed with Flyway.
 
 ---
 
 ## Amazon S3
 
-Os PDFs enviados para a API são armazenados no Amazon S3.
+PDFs sent to the API are stored in Amazon S3.
 
 Bucket:
 
@@ -562,25 +562,25 @@ Bucket:
 clientdocs-eduardo-dev
 ```
 
-Exemplo de chave gerada:
+Example generated key:
 
 ```text
 documents/2026/07/13720c7d-8353-4232-93e9-a07f76b89100-contrato_cliente_12345678000199_final.pdf
 ```
 
-A aplicação salva no banco apenas os metadados do arquivo, como:
+The application only saves file metadata in the database, such as:
 
 - bucket;
-- chave S3;
-- nome original;
+- S3 key;
+- original name;
 - content type;
-- tamanho do arquivo.
+- file size.
 
 ---
 
 ## Amazon SQS
 
-A aplicação usa SQS para processamento assíncrono de documentos.
+The application uses SQS for asynchronous document processing.
 
 Queue:
 
@@ -591,12 +591,12 @@ clientdocs-document-processing-dev
 Queue URL:
 
 ```text
-https://sqs.sa-east-1.amazonaws.com/766577288490/clientdocs-document-processing-dev
+https://sqs.sa-east-1.amazonaws.com/<account-id>/clientdocs-document-processing-dev
 ```
 
-Após o upload, a API envia uma mensagem para a fila contendo os dados necessários para processar o documento.
+After the upload, the API sends a message to the queue containing the data needed to process the document.
 
-Exemplo conceitual da mensagem:
+Conceptual message example:
 
 ```json
 {
@@ -609,21 +609,21 @@ Exemplo conceitual da mensagem:
 
 ---
 
-## Scheduler interno
+## Internal Scheduler
 
-A aplicação possui um scheduler usando `@Scheduled`.
+The application has a scheduler using `@Scheduled`.
 
-Ele executa periodicamente a leitura da fila SQS.
+It periodically reads from the SQS queue.
 
-Responsabilidades:
+Responsibilities:
 
-- consultar a fila SQS;
-- receber mensagens;
-- processar documentos pendentes;
-- atualizar status no RDS;
-- remover mensagens processadas da fila.
+- polling the SQS queue;
+- receiving messages;
+- processing pending documents;
+- updating status in RDS;
+- deleting processed messages from the queue.
 
-Fluxo:
+Flow:
 
 ```text
 Scheduler
@@ -641,37 +641,37 @@ SQS DeleteMessage
 
 ## IAM Task Role
 
-Inicialmente, a task usava credenciais via environment variables:
+Initially, the task used credentials via environment variables:
 
 ```text
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 ```
 
-Depois, o projeto foi ajustado para usar IAM Task Role, que é o modelo correto para aplicações rodando no ECS.
+The project was later adjusted to use an IAM Task Role, which is the correct model for applications running on ECS.
 
-Role criada:
+Role created:
 
 ```text
 clientdocs-ecs-task-role
 ```
 
-Policy criada:
+Policy created:
 
 ```text
 ClientDocsEcsTaskPolicy
 ```
 
-Permissões concedidas:
+Permissions granted:
 
-- acesso ao bucket S3 `clientdocs-eduardo-dev`;
-- envio e consumo de mensagens na fila SQS `clientdocs-document-processing-dev`.
+- access to the `clientdocs-eduardo-dev` S3 bucket;
+- sending and consuming messages on the `clientdocs-document-processing-dev` SQS queue.
 
-Com isso, as access keys foram removidas da Task Definition.
+With this, access keys were removed from the Task Definition.
 
-A aplicação passou a acessar S3 e SQS usando permissões da própria task ECS.
+The application now accesses S3 and SQS using the ECS task's own permissions.
 
-Arquitetura atual de permissão:
+Current permission architecture:
 
 ```text
 ECS Task
@@ -685,7 +685,7 @@ S3 + SQS
 
 ## Application Load Balancer
 
-Foi criado um Application Load Balancer para expor a API de forma mais estável.
+An Application Load Balancer was created to expose the API more reliably.
 
 Load Balancer:
 
@@ -729,7 +729,7 @@ Health check path:
 /health
 ```
 
-Fluxo com Load Balancer:
+Flow with the Load Balancer:
 
 ```text
 Internet
@@ -739,13 +739,13 @@ Application Load Balancer
 ECS Fargate / Spring Boot
 ```
 
-Antes, a aplicação era acessada diretamente pelo IP público da task ECS:
+Before, the application was accessed directly through the ECS task's public IP:
 
 ```text
 http://TASK_PUBLIC_IP:8080
 ```
 
-Depois do ALB, passou a ser acessada por:
+After the ALB, it became accessible via:
 
 ```text
 http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com
@@ -755,11 +755,11 @@ http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com
 
 ## Security Groups
 
-Foram configurados security groups separados para ALB, ECS e RDS.
+Separate security groups were configured for the ALB, ECS, and RDS.
 
 ### ALB Security Group
 
-Nome:
+Name:
 
 ```text
 clientdocs-alb-sg
@@ -771,41 +771,41 @@ Inbound:
 HTTP 80 from 0.0.0.0/0
 ```
 
-Responsabilidade:
+Responsibility:
 
 ```text
-Permitir acesso público HTTP ao Load Balancer
+Allow public HTTP access to the Load Balancer
 ```
 
 ### ECS Security Group
 
-Nome:
+Name:
 
 ```text
 clientdocs-ecs-sg
 ```
 
-Inbound final:
+Final inbound:
 
 ```text
 Custom TCP 8080 from clientdocs-alb-sg
 ```
 
-A regra pública direta foi removida:
+The direct public rule was removed:
 
 ```text
 Custom TCP 8080 from 0.0.0.0/0
 ```
 
-Responsabilidade:
+Responsibility:
 
 ```text
-Permitir acesso à aplicação somente através do Load Balancer
+Allow access to the application only through the Load Balancer
 ```
 
 ### RDS Security Group
 
-Nome:
+Name:
 
 ```text
 clientdocs-rds-sg
@@ -817,19 +817,19 @@ Inbound:
 PostgreSQL 5432 from clientdocs-ecs-sg
 ```
 
-Responsabilidade:
+Responsibility:
 
 ```text
-Permitir que somente a aplicação no ECS acesse o banco de dados
+Allow only the application running on ECS to access the database
 ```
 
 ---
 
-## Variáveis de ambiente da aplicação em produção
+## Production Environment Variables
 
-A Task Definition usa variáveis de ambiente para configurar a aplicação.
+The Task Definition uses environment variables to configure the application.
 
-Exemplo:
+Example:
 
 ```text
 SPRING_PROFILES_ACTIVE=prod
@@ -838,30 +838,30 @@ DATABASE_USERNAME=postgres
 DATABASE_PASSWORD=********
 AWS_REGION=sa-east-1
 AWS_S3_BUCKET_NAME=clientdocs-eduardo-dev
-AWS_SQS_DOCUMENT_QUEUE_URL=https://sqs.sa-east-1.amazonaws.com/766577288490/clientdocs-document-processing-dev
+AWS_SQS_DOCUMENT_QUEUE_URL=https://sqs.sa-east-1.amazonaws.com/<account-id>/clientdocs-document-processing-dev
 AWS_SQS_POLLING_INTERVAL_MS=10000
 ```
 
-Observação:
+Note:
 
 ```text
-AWS_ACCESS_KEY_ID e AWS_SECRET_ACCESS_KEY não são mais usados na task.
-O acesso a S3 e SQS é feito via IAM Task Role.
+AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are no longer used by the task.
+Access to S3 and SQS is done via the IAM Task Role.
 ```
 
 ---
 
-## Validação do fluxo em cloud
+## Cloud Flow Validation
 
-O fluxo completo foi validado na AWS.
+The full flow was validated on AWS.
 
-Teste realizado:
+Test performed:
 
 ```http
 POST http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/documents/upload
 ```
 
-Resultado inicial:
+Initial result:
 
 ```json
 {
@@ -872,13 +872,13 @@ Resultado inicial:
 }
 ```
 
-Consulta posterior:
+Follow-up query:
 
 ```http
 GET http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/documents/4
 ```
 
-Resultado processado:
+Processed result:
 
 ```json
 {
@@ -889,7 +889,7 @@ Resultado processado:
 }
 ```
 
-Isso confirma que os seguintes componentes estão funcionando integrados:
+This confirms that the following components are working together:
 
 ```text
 Application Load Balancer
@@ -899,26 +899,26 @@ RDS PostgreSQL
 S3
 SQS
 IAM Task Role
-Scheduler interno
+Internal scheduler
 ```
 
 ---
 
-## Como rodar localmente
+## Running Locally
 
-Subir dependências locais:
+Start local dependencies:
 
 ```bash
 docker compose up -d
 ```
 
-Rodar a aplicação com profile local:
+Run the application with the local profile:
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-Health check local:
+Local health check:
 
 ```http
 GET http://localhost:8080/health
@@ -926,21 +926,21 @@ GET http://localhost:8080/health
 
 ---
 
-## Como testar localmente
+## Testing Locally
 
-Criar cliente:
+Create a client:
 
 ```http
 POST http://localhost:8080/clients
 ```
 
-Upload de documento:
+Upload a document:
 
 ```http
 POST http://localhost:8080/documents/upload
 ```
 
-Consultar documento:
+Query a document:
 
 ```http
 GET http://localhost:8080/documents/{id}
@@ -954,69 +954,69 @@ http://localhost:8080/swagger-ui/index.html
 
 ---
 
-## Como fazer novo deploy
+## Making a New Deployment
 
-Após alterar o código:
+After changing the code:
 
 ```bash
 mvn clean package -DskipTests
 
 docker build -t clientdocs-api .
 
-docker tag clientdocs-api:latest 766577288490.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v3
+docker tag clientdocs-api:latest <account-id>.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v3
 
-aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin 766577288490.dkr.ecr.sa-east-1.amazonaws.com
+aws ecr get-login-password --region sa-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.sa-east-1.amazonaws.com
 
-docker push 766577288490.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v3
+docker push <account-id>.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v3
 ```
 
-Depois:
+Then:
 
-1. Criar nova revision da Task Definition.
-2. Atualizar a imagem para a nova tag.
-3. Manter a Task Role.
-4. Atualizar o ECS Service.
-5. Forçar novo deployment.
-6. Testar `/health`.
-7. Testar upload de documento.
-
----
-
-## Custos e desligamento
-
-Para reduzir custos quando não estiver usando o projeto:
-
-- alterar o ECS Service para `desired tasks = 0`;
-- parar temporariamente o RDS;
-- manter S3 e SQS, que tendem a ter custo baixo nesse volume de testes.
-
-Atenção: o Application Load Balancer e o RDS podem gerar cobrança mesmo com pouco uso.
+1. Create a new Task Definition revision.
+2. Update the image to the new tag.
+3. Keep the same Task Role.
+4. Update the ECS Service.
+5. Force a new deployment.
+6. Test `/health`.
+7. Test a document upload.
 
 ---
 
-## Melhorias futuras
+## Costs and Shutdown
 
-- Configurar HTTPS no Application Load Balancer
-- Adicionar domínio próprio
-- Usar AWS Secrets Manager para credenciais do banco
-- Criar pipeline CI/CD com GitHub Actions
-- Adicionar testes automatizados
-- Melhorar endpoint `/health` com status detalhado
-- Criar endpoint `/` com informações da API
-- Separar worker em serviço dedicado
-- Adicionar Dead Letter Queue para mensagens com erro
-- Adicionar métricas e alarmes no CloudWatch
-- Implementar autenticação/autorização
-- Criar frontend para upload e consulta de documentos
+To reduce costs when not actively using the project:
+
+- set the ECS Service to `desired tasks = 0`;
+- temporarily stop the RDS instance;
+- keep S3 and SQS running — they tend to have low cost at this testing volume.
+
+Warning: the Application Load Balancer and RDS can generate charges even with light usage.
 
 ---
 
-## Status do projeto
+## Future Improvements
 
-Fluxo cloud validado com sucesso:
+- Configure HTTPS on the Application Load Balancer
+- Add a custom domain
+- Use AWS Secrets Manager for database credentials
+- Build a CI/CD pipeline with GitHub Actions
+- Add automated tests
+- Improve the `/health` endpoint with detailed status
+- Create a `/` endpoint with API information
+- Extract the worker into its own dedicated service
+- Add a Dead Letter Queue for messages that fail processing
+- Add CloudWatch metrics and alarms
+- Implement authentication/authorization
+- Build a frontend for document upload and lookup
+
+---
+
+## Project Status
+
+Cloud flow successfully validated:
 
 ```text
-Upload PDF
+PDF upload
     ↓
 S3
     ↓
@@ -1029,7 +1029,7 @@ Scheduler
 RDS PROCESSED
 ```
 
-Componentes validados:
+Validated components:
 
 ```text
 Spring Boot
@@ -1042,4 +1042,4 @@ SQS
 IAM Task Role
 Application Load Balancer
 Security Groups
-```
+```****
