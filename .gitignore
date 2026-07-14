@@ -23,7 +23,7 @@ application-local.yml
 *.tmp
 
 # Local uploaded files
-storage/
+/storage/
 .env
 application-secret.yaml
 application-local-secret.yaml
