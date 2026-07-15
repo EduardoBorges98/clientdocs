@@ -1256,6 +1256,15 @@ Security Groups
 GitHub Actions CI/CD
 ```
 
+## Amazon SQS Dead Letter Queue
+
+The document processing queue is configured with a Dead Letter Queue to isolate messages that fail multiple processing attempts.
+
+Main queue:
+
+```text
+clientdocs-document-processing-dev
+```
 Latest validated security improvement:
 
 ```text
