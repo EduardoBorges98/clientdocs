@@ -1207,6 +1207,137 @@ Warning: the Application Load Balancer and RDS can generate charges even with li
 
 ---
 
+## Amazon SQS Dead Letter Queue
+
+The document processing queue is configured with a Dead Letter Queue to isolate messages that fail multiple processing attempts.
+
+Main queue:
+
+```text
+clientdocs-document-processing-dev
+```
+
+Dead Letter Queue:
+
+```text
+clientdocs-document-processing-dlq-dev
+```
+
+The main queue uses a redrive policy with:
+
+```text
+maxReceiveCount = 3
+```
+
+This means that if a message is received multiple times and is not deleted by the application after processing, Amazon SQS automatically moves it to the DLQ.
+
+Failure flow:
+
+```text
+Message sent to main queue
+    ↓
+Application receives the message
+    ↓
+Application tries to process it
+    ↓
+If processing succeeds, the message is deleted
+    ↓
+If processing fails, the message is not deleted
+    ↓
+SQS retries delivery
+    ↓
+After the receive limit is reached
+    ↓
+Message is moved to the DLQ
+```
+
+The consumer logs the SQS receive count to make retries easier to observe:
+
+```text
+receiveCount=1
+receiveCount=2
+receiveCount=3
+```
+
+The DLQ was validated by sending an invalid message to the main queue:
+
+```json
+{
+  "invalid": true
+}
+```
+
+The invalid message was retried by the application and then moved to:
+
+```text
+clientdocs-document-processing-dlq-dev
+```
+
+This confirms that failed messages are isolated instead of being retried forever or silently lost.
+
+---
+
+## CloudWatch Alarm for DLQ
+
+A CloudWatch alarm was created to monitor the Dead Letter Queue.
+
+Alarm name:
+
+```text
+clientdocs-dlq-has-messages-dev
+```
+
+Metric:
+
+```text
+ApproximateNumberOfMessagesVisible
+```
+
+Queue monitored:
+
+```text
+clientdocs-document-processing-dlq-dev
+```
+
+Condition:
+
+```text
+ApproximateNumberOfMessagesVisible >= 1
+for 1 datapoint within 1 minute
+```
+
+Purpose:
+
+```text
+Trigger an alert whenever one or more messages are available in the DLQ.
+```
+
+Alarm flow:
+
+```text
+Message fails processing
+    ↓
+Message is moved to the DLQ
+    ↓
+CloudWatch detects ApproximateNumberOfMessagesVisible >= 1
+    ↓
+Alarm changes to In alarm
+    ↓
+SNS sends an email notification
+```
+
+The alarm was validated by sending an invalid message to the main queue and confirming that:
+
+```text
+1. the message was moved to the DLQ;
+2. the CloudWatch alarm changed to In alarm;
+3. an email notification was received through SNS.
+```
+
+After the test, the message can be deleted from the DLQ and the alarm returns to `OK`.
+
+---
+
 ## Future Improvements
 
 - Configure HTTPS on the Application Load Balancer
@@ -1214,8 +1345,9 @@ Warning: the Application Load Balancer and RDS can generate charges even with li
 - Add automated tests
 - Add deeper health checks for database, storage, and queue
 - Extract the worker into its own dedicated service
-- Add a Dead Letter Queue for messages that fail processing
-- Add CloudWatch metrics and alarms
+- Add a CloudWatch dashboard
+- Add AWS Lambda for event-driven processing
+- Add Kubernetes manifests for local deployment with Minikube
 - Implement authentication/authorization
 - Build a frontend for document upload and lookup
 
@@ -1249,22 +1381,26 @@ Amazon ECS Fargate
 Amazon RDS PostgreSQL
 Amazon S3
 Amazon SQS
+SQS Dead Letter Queue
 AWS IAM Task Role
 AWS Secrets Manager
+Amazon CloudWatch Alarm
+Amazon SNS email notification
 Application Load Balancer
 Security Groups
 GitHub Actions CI/CD
 ```
 
-## Amazon SQS Dead Letter Queue
-
-The document processing queue is configured with a Dead Letter Queue to isolate messages that fail multiple processing attempts.
-
-Main queue:
+Validated resilience and monitoring improvements:
 
 ```text
-clientdocs-document-processing-dev
+Dead Letter Queue configured for failed SQS messages
+SQS receiveCount logs added to the consumer
+Invalid message tested and moved to the DLQ
+CloudWatch alarm triggered when DLQ had messages
+SNS email notification received successfully
 ```
+
 Latest validated security improvement:
 
 ```text
