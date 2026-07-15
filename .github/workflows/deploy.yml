@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: clientdocs-ecs-deploy-main
+  cancel-in-progress: true
+
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -32,7 +36,7 @@ jobs:
 
       - name: Run tests
         run: mvn test
-        
+
       - name: Build application
         run: mvn clean package -DskipTests
 
