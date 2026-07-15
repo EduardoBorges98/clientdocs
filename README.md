@@ -42,6 +42,8 @@ The application allows you to:
 - Amazon SQS
 - AWS IAM
 - AWS Secrets Manager
+- Amazon CloudWatch
+- Amazon SNS
 - Application Load Balancer
 - GitHub Actions
 
@@ -473,6 +475,8 @@ The deployment was done using the following services:
 - Amazon SQS
 - AWS IAM
 - AWS Secrets Manager
+- Amazon CloudWatch
+- Amazon SNS
 - Application Load Balancer
 - GitHub Actions
 
@@ -1338,6 +1342,164 @@ After the test, the message can be deleted from the DLQ and the alarm returns to
 
 ---
 
+## CloudWatch Dashboard
+
+A custom CloudWatch dashboard was created to provide a centralized operational view of the ClientDocs environment.
+
+Dashboard name:
+
+```text
+clientdocs-dashboard-dev
+```
+
+The dashboard helps monitor the main backend and cloud infrastructure components without needing to inspect each AWS service separately.
+
+Widgets configured:
+
+```text
+SQS DLQ - Visible Messages
+SQS Main Queue - Message Flow
+ECS Service - CPU and Memory
+ALB - Traffic, Errors and Latency
+RDS - CPU, Connections and Storage
+```
+
+### SQS DLQ - Visible Messages
+
+Monitors the number of visible messages in the Dead Letter Queue.
+
+Queue:
+
+```text
+clientdocs-document-processing-dlq-dev
+```
+
+Metric:
+
+```text
+ApproximateNumberOfMessagesVisible
+```
+
+Purpose:
+
+```text
+Identify failed messages that were moved to the DLQ after retry attempts.
+```
+
+### SQS Main Queue - Message Flow
+
+Monitors the main document processing queue.
+
+Queue:
+
+```text
+clientdocs-document-processing-dev
+```
+
+Metrics used:
+
+```text
+ApproximateNumberOfMessagesVisible
+ApproximateNumberOfMessagesNotVisible
+NumberOfMessagesSent
+NumberOfMessagesReceived
+NumberOfMessagesDeleted
+```
+
+Purpose:
+
+```text
+Track whether messages are being sent, consumed, processed, and deleted correctly.
+```
+
+### ECS Service - CPU and Memory
+
+Monitors the ECS service running the Spring Boot application.
+
+Cluster:
+
+```text
+clientdocs-cluster-dev
+```
+
+Service:
+
+```text
+clientdocs-api-service
+```
+
+Metrics used:
+
+```text
+CPUUtilization
+MemoryUtilization
+```
+
+Purpose:
+
+```text
+Observe resource usage of the application container running on ECS Fargate.
+```
+
+### ALB - Traffic, Errors and Latency
+
+Monitors traffic and response behavior through the Application Load Balancer.
+
+Load Balancer:
+
+```text
+clientdocs-alb
+```
+
+Target Group:
+
+```text
+clientdocs-api-tg
+```
+
+Metrics used:
+
+```text
+RequestCount
+HTTPCode_Target_5XX_Count
+TargetResponseTime
+```
+
+Purpose:
+
+```text
+Track API traffic, application-side 5xx errors, and response latency.
+```
+
+### RDS - CPU, Connections and Storage
+
+Monitors the PostgreSQL database running on Amazon RDS.
+
+DB instance:
+
+```text
+clientdocs-postgres-dev
+```
+
+Metrics used:
+
+```text
+CPUUtilization
+DatabaseConnections
+FreeableMemory
+FreeStorageSpace
+```
+
+Purpose:
+
+```text
+Monitor database load, active connections, available memory, and remaining storage.
+```
+
+The dashboard completes the current observability setup together with CloudWatch Logs, the DLQ alarm, and SNS email notifications.
+
+---
+
 ## Future Improvements
 
 - Configure HTTPS on the Application Load Balancer
@@ -1345,7 +1507,6 @@ After the test, the message can be deleted from the DLQ and the alarm returns to
 - Add automated tests
 - Add deeper health checks for database, storage, and queue
 - Extract the worker into its own dedicated service
-- Add a CloudWatch dashboard
 - Add AWS Lambda for event-driven processing
 - Add Kubernetes manifests for local deployment with Minikube
 - Implement authentication/authorization
@@ -1385,6 +1546,7 @@ SQS Dead Letter Queue
 AWS IAM Task Role
 AWS Secrets Manager
 Amazon CloudWatch Alarm
+Amazon CloudWatch Dashboard
 Amazon SNS email notification
 Application Load Balancer
 Security Groups
@@ -1399,6 +1561,7 @@ SQS receiveCount logs added to the consumer
 Invalid message tested and moved to the DLQ
 CloudWatch alarm triggered when DLQ had messages
 SNS email notification received successfully
+CloudWatch dashboard created for SQS, ECS, ALB, and RDS metrics
 ```
 
 Latest validated security improvement:
