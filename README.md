@@ -42,6 +42,7 @@ The application allows you to:
 - Amazon SQS
 - AWS IAM
 - Application Load Balancer
+- GitHub Actions
 
 ---
 
@@ -67,6 +68,24 @@ SQS
 Internal scheduler
     ↓
 RDS updated
+```
+
+Deployment is automated with GitHub Actions:
+
+```text
+git push to main
+    ↓
+GitHub Actions
+    ↓
+Maven build
+    ↓
+Docker image build
+    ↓
+Push image to Amazon ECR
+    ↓
+Render new ECS Task Definition
+    ↓
+Deploy to Amazon ECS Fargate
 ```
 
 ---
@@ -158,6 +177,30 @@ ERROR
 
 ## Main Endpoints
 
+### API information
+
+```http
+GET /
+```
+
+Example:
+
+```http
+GET http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/
+```
+
+Expected response:
+
+```json
+{
+  "service": "ClientDocs Processor",
+  "status": "running",
+  "version": "1.0.0",
+  "health": "/health",
+  "docs": "/swagger-ui/index.html"
+}
+```
+
 ### Health check
 
 ```http
@@ -172,8 +215,11 @@ GET http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/health
 
 Expected response:
 
-```text
-ClientDocs API is running
+```json
+{
+  "status": "UP",
+  "service": "clientdocs-api"
+}
 ```
 
 ---
@@ -426,6 +472,80 @@ The deployment was done using the following services:
 - Amazon SQS
 - AWS IAM
 - Application Load Balancer
+- GitHub Actions
+
+---
+
+## CI/CD Pipeline
+
+The project includes a CI/CD pipeline configured with GitHub Actions.
+
+The workflow is triggered automatically on every push to the `main` branch.
+
+Pipeline flow:
+
+```text
+git push
+    ↓
+GitHub Actions
+    ↓
+Build application with Maven
+    ↓
+Build Docker image
+    ↓
+Push image to Amazon ECR
+    ↓
+Render a new ECS Task Definition
+    ↓
+Deploy automatically to Amazon ECS Fargate
+```
+
+Main steps executed by the workflow:
+
+- checkout of the repository;
+- Java 21 setup;
+- Maven build with tests skipped for deployment packaging;
+- AWS authentication using GitHub Actions secrets;
+- login to Amazon ECR;
+- Docker image build;
+- Docker image push to ECR;
+- download of the current ECS Task Definition;
+- rendering of a new ECS Task Definition with the new image;
+- deployment to the ECS Service.
+
+The Docker image is tagged using the commit hash (`GITHUB_SHA`), which makes each deployment traceable to a specific Git commit.
+
+GitHub Actions workflow file:
+
+```text
+.github/workflows/deploy.yml
+```
+
+GitHub repository secrets used by the workflow:
+
+```text
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+AWS_ACCOUNT_ID
+ECR_REPOSITORY
+ECS_CLUSTER
+ECS_SERVICE
+ECS_TASK_DEFINITION
+CONTAINER_NAME
+```
+
+Validated CI/CD flow:
+
+```text
+GitHub Actions
+    ↓
+Amazon ECR
+    ↓
+Amazon ECS Fargate
+    ↓
+Application Load Balancer
+```
 
 ---
 
@@ -439,11 +559,13 @@ Repository:
 clientdocs-api
 ```
 
-Image URI used in the deployment:
+Image URI format used in deployments:
 
 ```text
-<account-id>.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:v2
+<account-id>.dkr.ecr.sa-east-1.amazonaws.com/clientdocs-api:<image-tag>
 ```
+
+Manual deployments used explicit tags such as `v2` and `v3`. The CI/CD pipeline tags images with the commit hash (`GITHUB_SHA`).
 
 Flow used:
 
@@ -497,11 +619,14 @@ Task Definition:
 clientdocs-api-task
 ```
 
-Validated revision:
+Validated revisions:
 
 ```text
 clientdocs-api-task:4
+clientdocs-api-task:5
 ```
+
+New revisions are now also generated automatically by the GitHub Actions deployment pipeline.
 
 Container port:
 
@@ -900,6 +1025,7 @@ S3
 SQS
 IAM Task Role
 Internal scheduler
+GitHub Actions CI/CD
 ```
 
 ---
@@ -956,7 +1082,40 @@ http://localhost:8080/swagger-ui/index.html
 
 ## Making a New Deployment
 
+The preferred deployment flow is now automated through GitHub Actions.
+
 After changing the code:
+
+```bash
+git add .
+git commit -m "Describe the change"
+git push
+```
+
+A push to the `main` branch automatically triggers the pipeline:
+
+```text
+GitHub Actions
+    ↓
+Maven build
+    ↓
+Docker build
+    ↓
+Push image to ECR
+    ↓
+New ECS Task Definition
+    ↓
+Deploy to ECS Service
+```
+
+After the workflow finishes successfully, validate the deployed application:
+
+```bash
+curl http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/
+curl http://clientdocs-alb-1532624692.sa-east-1.elb.amazonaws.com/health
+```
+
+The manual deployment flow is still possible if needed:
 
 ```bash
 mvn clean package -DskipTests
@@ -999,10 +1158,8 @@ Warning: the Application Load Balancer and RDS can generate charges even with li
 - Configure HTTPS on the Application Load Balancer
 - Add a custom domain
 - Use AWS Secrets Manager for database credentials
-- Build a CI/CD pipeline with GitHub Actions
 - Add automated tests
-- Improve the `/health` endpoint with detailed status
-- Create a `/` endpoint with API information
+- Add deeper health checks for database, storage, and queue
 - Extract the worker into its own dedicated service
 - Add a Dead Letter Queue for messages that fail processing
 - Add CloudWatch metrics and alarms
@@ -1042,4 +1199,5 @@ SQS
 IAM Task Role
 Application Load Balancer
 Security Groups
+GitHub Actions CI/CD
 ```****
