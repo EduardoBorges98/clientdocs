@@ -1186,6 +1186,15 @@ Scheduler
 RDS PROCESSED
 ```
 
+## Secrets Manager
+
+The RDS database password is stored in AWS Secrets Manager instead of being exposed as a plain environment variable in the ECS Task Definition.
+
+Secret used:
+
+```text
+clientdocs/rds/database-password
+```
 Validated components:
 
 ```text
