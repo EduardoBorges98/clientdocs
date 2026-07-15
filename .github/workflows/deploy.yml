@@ -30,6 +30,9 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Run tests
+        run: mvn test
+        
       - name: Build application
         run: mvn clean package -DskipTests
 
