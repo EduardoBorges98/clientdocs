@@ -41,6 +41,7 @@ The application allows you to:
 - Amazon S3
 - Amazon SQS
 - AWS IAM
+- AWS Secrets Manager
 - Application Load Balancer
 - GitHub Actions
 
@@ -471,6 +472,7 @@ The deployment was done using the following services:
 - Amazon S3
 - Amazon SQS
 - AWS IAM
+- AWS Secrets Manager
 - Application Load Balancer
 - GitHub Actions
 
@@ -619,14 +621,15 @@ Task Definition:
 clientdocs-api-task
 ```
 
-Validated revisions:
+Validated revisions include manual revisions and later revisions generated through CI/CD and infrastructure updates.
 
 ```text
 clientdocs-api-task:4
 clientdocs-api-task:5
+clientdocs-api-task:9
 ```
 
-New revisions are now also generated automatically by the GitHub Actions deployment pipeline.
+New revisions are also generated automatically by the GitHub Actions deployment pipeline.
 
 Container port:
 
@@ -808,6 +811,54 @@ S3 + SQS
 
 ---
 
+## AWS Secrets Manager
+
+The RDS database password is stored in AWS Secrets Manager instead of being exposed as a plain text environment variable in the ECS Task Definition.
+
+Secret used:
+
+```text
+clientdocs/rds/database-password
+```
+
+The ECS Task Definition injects the secret into the container as the same environment variable expected by the Spring Boot application:
+
+```text
+DATABASE_PASSWORD
+```
+
+The application code did not need to change. Spring Boot continues to read `DATABASE_PASSWORD`, but ECS retrieves the value securely from Secrets Manager before starting the container.
+
+Secret injection flow:
+
+```text
+AWS Secrets Manager
+    ↓
+ecsTaskExecutionRole
+    ↓
+ECS Task Definition ValueFrom
+    ↓
+DATABASE_PASSWORD environment variable
+    ↓
+Spring Boot connects to RDS
+```
+
+Important implementation detail: because the secret was created as a key/value secret with the key `DATABASE_PASSWORD`, the ECS `ValueFrom` reference uses the JSON key suffix:
+
+```text
+arn:aws:secretsmanager:sa-east-1:<account-id>:secret:clientdocs/rds/database-password-xxxxxx:DATABASE_PASSWORD::
+```
+
+The permission required to retrieve the secret is attached to the ECS Task Execution Role:
+
+```text
+secretsmanager:GetSecretValue
+```
+
+This permission is required on `ecsTaskExecutionRole` because ECS retrieves and injects the secret before the application container starts.
+
+---
+
 ## Application Load Balancer
 
 An Application Load Balancer was created to expose the API more reliably.
@@ -972,6 +1023,8 @@ Note:
 ```text
 AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are no longer used by the task.
 Access to S3 and SQS is done via the IAM Task Role.
+DATABASE_PASSWORD is not stored as plain text in the Task Definition.
+It is injected from AWS Secrets Manager using ValueFrom.
 ```
 
 ---
@@ -1024,6 +1077,7 @@ RDS PostgreSQL
 S3
 SQS
 IAM Task Role
+AWS Secrets Manager
 Internal scheduler
 GitHub Actions CI/CD
 ```
@@ -1157,7 +1211,6 @@ Warning: the Application Load Balancer and RDS can generate charges even with li
 
 - Configure HTTPS on the Application Load Balancer
 - Add a custom domain
-- Use AWS Secrets Manager for database credentials
 - Add automated tests
 - Add deeper health checks for database, storage, and queue
 - Extract the worker into its own dedicated service
@@ -1186,27 +1239,27 @@ Scheduler
 RDS PROCESSED
 ```
 
-## Secrets Manager
-
-The RDS database password is stored in AWS Secrets Manager instead of being exposed as a plain environment variable in the ECS Task Definition.
-
-Secret used:
-
-```text
-clientdocs/rds/database-password
-```
-Validated components:
+Validated production infrastructure:
 
 ```text
 Spring Boot
 Docker
-ECR
-ECS Fargate
-RDS PostgreSQL
-S3
-SQS
-IAM Task Role
+Amazon ECR
+Amazon ECS Fargate
+Amazon RDS PostgreSQL
+Amazon S3
+Amazon SQS
+AWS IAM Task Role
+AWS Secrets Manager
 Application Load Balancer
 Security Groups
 GitHub Actions CI/CD
-```****
+```
+
+Latest validated security improvement:
+
+```text
+DATABASE_PASSWORD removed from plain environment variables
+DATABASE_PASSWORD injected from AWS Secrets Manager
+ecsTaskExecutionRole allowed to call secretsmanager:GetSecretValue
+Application successfully connected to RDS after secret injection
