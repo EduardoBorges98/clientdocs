@@ -29,6 +29,8 @@ public class DocumentQueueScheduler {
             }
         } catch (BusinessException exception) {
             logger.error("Failed to process SQS document message: {}", exception.getMessage());
+        } catch (Exception exception) {
+            logger.error("Unexpected error while processing SQS document message", exception);
         }
     }
 }

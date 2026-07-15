@@ -10,10 +10,12 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 @Component
@@ -46,6 +48,7 @@ public class DocumentQueueConsumer {
                     .queueUrl(awsProperties.getSqs().getDocumentQueueUrl())
                     .maxNumberOfMessages(1)
                     .waitTimeSeconds(5)
+                    .messageSystemAttributeNames(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT)
                     .build();
 
             List<Message> messages = sqsClient.receiveMessage(receiveMessageRequest).messages();
@@ -57,14 +60,24 @@ public class DocumentQueueConsumer {
 
             Message message = messages.get(0);
 
-            logger.info("Received SQS document message. messageId={}", message.messageId());
+            String receiveCount = message.attributes()
+                    .getOrDefault(MessageSystemAttributeName.APPROXIMATE_RECEIVE_COUNT, "1");
+
+            logger.info("Received SQS document message. messageId={}, receiveCount={}",
+                    message.messageId(),
+                    receiveCount
+            );
 
             DocumentProcessingMessage documentMessage = objectMapper.readValue(
                     message.body(),
                     DocumentProcessingMessage.class
             );
 
-            logger.info("Processing SQS document message. documentId={}", documentMessage.getDocumentId());
+            logger.info("Processing SQS document message. documentId={}, messageId={}, receiveCount={}",
+                    documentMessage.getDocumentId(),
+                    message.messageId(),
+                    receiveCount
+            );
 
             documentProcessingService.process(documentMessage);
 
