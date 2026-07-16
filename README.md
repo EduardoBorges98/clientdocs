@@ -46,6 +46,8 @@ The application allows you to:
 - Amazon SNS
 - Application Load Balancer
 - GitHub Actions
+- JUnit
+- Mockito
 
 ---
 
@@ -495,6 +497,8 @@ git push
     ↓
 GitHub Actions
     ↓
+Run automated tests
+    ↓
 Build application with Maven
     ↓
 Build Docker image
@@ -510,7 +514,8 @@ Main steps executed by the workflow:
 
 - checkout of the repository;
 - Java 21 setup;
-- Maven build with tests skipped for deployment packaging;
+- automated test execution with `mvn test`;
+- Maven package build with `mvn clean package -DskipTests`;
 - AWS authentication using GitHub Actions secrets;
 - login to Amazon ECR;
 - Docker image build;
@@ -520,6 +525,16 @@ Main steps executed by the workflow:
 - deployment to the ECS Service.
 
 The Docker image is tagged using the commit hash (`GITHUB_SHA`), which makes each deployment traceable to a specific Git commit.
+
+Concurrent ECS deployments are prevented using GitHub Actions concurrency:
+
+```yaml
+concurrency:
+  group: clientdocs-ecs-deploy-main
+  cancel-in-progress: true
+```
+
+This prevents overlapping deployments from trying to update the same ECS Service at the same time.
 
 GitHub Actions workflow file:
 
@@ -1084,6 +1099,8 @@ IAM Task Role
 AWS Secrets Manager
 Internal scheduler
 GitHub Actions CI/CD
+Automated unit tests
+CI/CD test execution before deployment
 ```
 
 ---
@@ -1138,6 +1155,49 @@ http://localhost:8080/swagger-ui/index.html
 
 ---
 
+## Automated Tests
+
+The project now includes automated tests to validate service-layer business rules before deployment.
+
+Current test coverage:
+
+```text
+ClientServiceTest
+```
+
+The `ClientServiceTest` validates the main client business flows:
+
+```text
+create client successfully when CPF/CNPJ does not already exist
+reject duplicated CPF/CNPJ with BusinessException
+list all clients
+find client by ID
+throw ResourceNotFoundException when client is not found
+```
+
+The tests are unit tests and use mocked dependencies, so they do not require:
+
+```text
+PostgreSQL
+Amazon S3
+Amazon SQS
+Amazon ECS
+AWS credentials
+```
+
+This keeps the feedback loop fast and prevents the test suite from depending on local infrastructure or cloud resources.
+
+Commands used locally:
+
+```bash
+mvn test
+mvn clean package
+```
+
+Both commands were validated successfully after adding the unit tests.
+
+---
+
 ## Making a New Deployment
 
 The preferred deployment flow is now automated through GitHub Actions.
@@ -1154,6 +1214,8 @@ A push to the `main` branch automatically triggers the pipeline:
 
 ```text
 GitHub Actions
+    ↓
+Run automated tests
     ↓
 Maven build
     ↓
@@ -1504,7 +1566,6 @@ The dashboard completes the current observability setup together with CloudWatch
 
 - Configure HTTPS on the Application Load Balancer
 - Add a custom domain
-- Add automated tests
 - Add deeper health checks for database, storage, and queue
 - Extract the worker into its own dedicated service
 - Add AWS Lambda for event-driven processing
@@ -1551,6 +1612,8 @@ Amazon SNS email notification
 Application Load Balancer
 Security Groups
 GitHub Actions CI/CD
+Automated unit tests
+CI/CD test execution before deployment
 ```
 
 Validated resilience and monitoring improvements:
@@ -1562,6 +1625,9 @@ Invalid message tested and moved to the DLQ
 CloudWatch alarm triggered when DLQ had messages
 SNS email notification received successfully
 CloudWatch dashboard created for SQS, ECS, ALB, and RDS metrics
+ClientService unit tests validated locally
+GitHub Actions pipeline runs tests before deployment
+Concurrent ECS deployments prevented with GitHub Actions concurrency
 ```
 
 Latest validated security improvement:
