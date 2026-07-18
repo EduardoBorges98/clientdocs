@@ -48,6 +48,7 @@ The application allows you to:
 - GitHub Actions
 - JUnit
 - Mockito
+- Testcontainers
 
 ---
 
@@ -1157,44 +1158,219 @@ http://localhost:8080/swagger-ui/index.html
 
 ## Automated Tests
 
-The project now includes automated tests to validate service-layer business rules before deployment.
+The project includes automated tests covering the main application layers, queue behavior, storage integration, database persistence, and the main document processing flow.
 
-Current test coverage:
+The GitHub Actions pipeline runs the test suite before building and deploying the Docker image to Amazon ECS Fargate.
 
-```text
-ClientServiceTest
-```
-
-The `ClientServiceTest` validates the main client business flows:
-
-```text
-create client successfully when CPF/CNPJ does not already exist
-reject duplicated CPF/CNPJ with BusinessException
-list all clients
-find client by ID
-throw ResourceNotFoundException when client is not found
-```
-
-The tests are unit tests and use mocked dependencies, so they do not require:
-
-```text
-PostgreSQL
-Amazon S3
-Amazon SQS
-Amazon ECS
-AWS credentials
-```
-
-This keeps the feedback loop fast and prevents the test suite from depending on local infrastructure or cloud resources.
-
-Commands used locally:
+### Running tests locally
 
 ```bash
 mvn test
+```
+
+### Building the application with tests
+
+```bash
 mvn clean package
 ```
 
-Both commands were validated successfully after adding the unit tests.
+### Test coverage
+
+#### Service tests
+
+```text
+ClientServiceTest
+DocumentServiceTest
+DocumentProcessingServiceTest
+```
+
+Covered scenarios:
+
+- creating clients successfully;
+- preventing duplicated CPF/CNPJ records;
+- listing clients;
+- finding clients by ID;
+- handling client not found scenarios;
+- validating PDF uploads;
+- extracting CPF/CNPJ from file names;
+- creating pending document records;
+- sending document processing messages to SQS;
+- handling invalid files;
+- handling document download;
+- processing documents successfully;
+- associating documents with existing clients;
+- marking documents as `CLIENT_NOT_FOUND` when no matching client exists;
+- handling missing documents.
+
+#### Controller tests
+
+```text
+ClientControllerTest
+DocumentControllerTest
+HealthCheckControllerTest
+QueueControllerTest
+```
+
+Covered endpoints:
+
+```http
+POST /clients
+GET /clients
+GET /clients/{id}
+
+POST /documents/upload
+POST /documents/process-mock
+GET /documents
+GET /documents/{id}
+GET /documents/{id}/download
+
+GET /
+GET /health
+
+POST /queue/process-one
+```
+
+Covered scenarios:
+
+- successful HTTP responses;
+- JSON response structure;
+- multipart file upload;
+- file download response;
+- request validation errors;
+- business errors;
+- not found errors.
+
+#### Queue tests
+
+```text
+DocumentQueueProducerTest
+DocumentQueueConsumerTest
+```
+
+Covered scenarios:
+
+- serializing document processing messages;
+- sending messages to SQS;
+- handling JSON serialization errors;
+- handling SQS send errors;
+- polling messages from SQS;
+- processing messages successfully;
+- deleting SQS messages only after successful processing;
+- keeping failed messages available for retry and DLQ flow;
+- handling empty queues;
+- handling malformed messages;
+- handling SQS receive errors.
+
+#### Repository tests with Testcontainers
+
+```text
+ClientRepositoryTest
+DocumentRepositoryTest
+```
+
+These tests use a real PostgreSQL container through Testcontainers.
+
+Covered scenarios:
+
+- saving clients in PostgreSQL;
+- finding clients by CPF/CNPJ;
+- checking if CPF/CNPJ already exists;
+- saving pending documents;
+- finding documents by status;
+- saving processed documents associated with clients;
+- saving documents with `CLIENT_NOT_FOUND` status.
+
+#### Integration tests
+
+```text
+DocumentFlowIntegrationTest
+```
+
+This test validates the main document processing flow using:
+
+```text
+PostgreSQL with Testcontainers
+Real repositories
+Real DocumentService
+Real DocumentProcessingService
+Mocked StorageService
+Mocked DocumentQueueProducer
+```
+
+Validated flow:
+
+```text
+Client exists in PostgreSQL
+    ↓
+PDF upload is simulated
+    ↓
+Document is created as PENDING
+    ↓
+Queue message is produced
+    ↓
+DocumentProcessingService processes the message
+    ↓
+Document becomes PROCESSED
+    ↓
+Client is associated with the document
+```
+
+The integration test also validates the alternative flow where the extracted CPF/CNPJ does not match any client and the document becomes `CLIENT_NOT_FOUND`.
+
+#### Storage tests
+
+```text
+S3StorageServiceTest
+```
+
+Covered scenarios:
+
+- creating the S3 upload request correctly;
+- generating the S3 object key;
+- sanitizing file names;
+- returning stored file metadata;
+- handling missing file names;
+- handling file input stream errors;
+- handling S3 upload errors;
+- downloading files from S3 with a mocked `S3Client`.
+
+### Test strategy
+
+The test suite is split into fast unit tests and infrastructure-oriented tests:
+
+```text
+Unit tests
+    ↓
+Service, controller, queue and storage behavior with mocks
+
+Repository tests
+    ↓
+Real PostgreSQL with Testcontainers
+
+Integration tests
+    ↓
+Main business flow with real database and mocked AWS boundaries
+```
+
+This keeps the feedback loop fast while still validating the most important infrastructure behavior without depending on real AWS resources during automated tests.
+
+### CI/CD validation
+
+The deployment pipeline only proceeds if all automated tests pass.
+
+```text
+GitHub Actions
+    ↓
+mvn test
+    ↓
+mvn clean package -DskipTests
+    ↓
+Docker build
+    ↓
+Push to Amazon ECR
+    ↓
+Deploy to Amazon ECS Fargate
+```
 
 ---
 
@@ -1577,6 +1753,8 @@ The dashboard completes the current observability setup together with CloudWatch
 
 ## Project Status
 
+Current status: production-like MVP deployed on AWS and validated end to end.
+
 Cloud flow successfully validated:
 
 ```text
@@ -1612,7 +1790,17 @@ Amazon SNS email notification
 Application Load Balancer
 Security Groups
 GitHub Actions CI/CD
-Automated unit tests
+```
+
+Validated automated test coverage:
+
+```text
+Service tests
+Controller tests
+Queue tests
+Repository tests with Testcontainers
+Integration tests
+Storage tests
 CI/CD test execution before deployment
 ```
 
@@ -1625,8 +1813,6 @@ Invalid message tested and moved to the DLQ
 CloudWatch alarm triggered when DLQ had messages
 SNS email notification received successfully
 CloudWatch dashboard created for SQS, ECS, ALB, and RDS metrics
-ClientService unit tests validated locally
-GitHub Actions pipeline runs tests before deployment
 Concurrent ECS deployments prevented with GitHub Actions concurrency
 ```
 
@@ -1637,3 +1823,4 @@ DATABASE_PASSWORD removed from plain environment variables
 DATABASE_PASSWORD injected from AWS Secrets Manager
 ecsTaskExecutionRole allowed to call secretsmanager:GetSecretValue
 Application successfully connected to RDS after secret injection
+```
